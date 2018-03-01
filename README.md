@@ -9,8 +9,6 @@ The script requires an API authentication token as documented at the [IntelGraph
 The syntax is as follows:
 
 ```
-
-None at this time.
 usage: ig-query.py [-h] [--debug] [--format {html,json,markdown}] indicator
 ```
 
