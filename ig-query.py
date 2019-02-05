@@ -100,11 +100,11 @@ def main():
         sys.exit("Bad HTTP response:\n%s" % str(r.status_code))
 
     if args.format == 'json':
-        print json.dumps(r.json(), indent=2)
+        print(json.dumps(r.json(), indent=2))
     elif args.format == 'markdown':
-        print output_markdown(r.json()['results'][0])
+        print(output_markdown(r.json()['results'][0]))
     elif args.format == 'html':
-        print output_html(r.json()['results'][0])
+        print(output_html(r.json()['results'][0]))
 
 
 if __name__ == "__main__":
