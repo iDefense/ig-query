@@ -5,21 +5,16 @@ import sys
 
 import markdown
 import requests
-
-
-# globals
-TI_REQUEST_URL = "https://api.intelgraph.idefense.com/rest/"
-API_KEY = ""
-HEADERS = {}
+import globals as g
 
 
 def get_ia_title(uuid):
 
-    API_KEY = os.getenv('IDEF_TOKEN')
-    HEADERS = {"Content-Type": "application/json", "auth-token": API_KEY}
+    if __debug__:
+        sys.stderr.write(f'Fetching title for {uuid}\n')
 
     try:
-        r = requests.get(TI_REQUEST_URL + 'document/v0?uuid.values=' + uuid, headers=HEADERS)
+        r = requests.get(g.config.url + 'document/v0?uuid.values=' + uuid, headers=g.config.headers)
     except requests.exceptions.ConnectionError as e:
         sys.exit("Check your network connection:\n%s" % str(e))
     except requests.exceptions.HTTPError as e:
@@ -61,6 +56,8 @@ def output_markdown(data):
         md += "\n## Relationships\n"
         for each in data['links']:
             if each['type'] == 'intelligence_alert':
+                if __debug__:
+                    sys.stderr.write(each['uuid'] + '\n')
                 title = get_ia_title(each['uuid'])
                 md += '- Intelligence Alert: [%s](%s%s)' % (title, 'https://intelgraph.idefense.com/#/node/intelligence_alert/view/', each['uuid'])
             else:
@@ -68,27 +65,32 @@ def output_markdown(data):
     return md
 
 
+def get_fundamentals(filename):
+    with open(filename, 'r') as f:
+        indicators = f.read().split()
+    return indicators
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Query iDefense IntelGraph for information on a particular key')
-    parser.add_argument('indicator', help='Specify a key')
-    parser.add_argument('--debug', action='store_true', help='Print additional debug output')
+    parser = argparse.ArgumentParser(description='Query iDefense IntelGraph for information on a particular key (fundamental)')
+    parser.add_argument('key', help='Specify a key')
+    parser.add_argument('--input', help='Specify an input file containing keys')
     parser.add_argument('--format', help='Define output format', choices=['html', 'json', 'markdown'], default='json')
     args = parser.parse_args()
 
     # Initial basics
-    API_KEY = os.getenv('IDEF_TOKEN')
-    if args.debug:
-        sys.stderr.write('Key: %s' % API_KEY)
-    if not API_KEY:
+    g.config.token = os.getenv('IDEF_TOKEN')
+    if __debug__:
+        sys.stderr.write('IDEF_TOKEN: %s\n' % g.config.token)
+    if not g.config.token:
         sys.exit("Please provide API key in environment variable IDEF_TOKEN\n")
 
-    if not args.indicator:
-        sys.exit('Please specify a key or file\n')
+    g.config.headers = {"Content-Type": "application/json", "auth-token": g.config.token}
 
-    HEADERS = {"Content-Type": "application/json", "auth-token": API_KEY}
-
+    if __debug__:
+        sys.stderr.write('Key: %s\n' % args.key)
     try:
-        r = requests.get(TI_REQUEST_URL + 'fundamental/v0?key.values=' + args.indicator, headers=HEADERS)
+        r = requests.get(g.config.url + 'fundamental/v0?key.values=' + args.key, headers=g.config.headers)
     except requests.exceptions.ConnectionError as e:
         sys.exit("Check your network connection:\n%s" % str(e))
     except requests.exceptions.HTTPError as e:
@@ -102,10 +104,14 @@ def main():
     if args.format == 'json':
         print(json.dumps(r.json(), indent=2))
     elif args.format == 'markdown':
+        if __debug__:
+            sys.stderr.write(json.dumps(r.json(), indent=2))
+            sys.stderr.write('\n')
         print(output_markdown(r.json()['results'][0]))
     elif args.format == 'html':
         print(output_html(r.json()['results'][0]))
 
 
 if __name__ == "__main__":
+
     main()
