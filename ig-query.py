@@ -69,7 +69,7 @@ def get_fundamentals(filename):
     if __debug__:
         sys.stderr.write('Opening ' + filename + ' for fundamentals\n')
     with open(filename, 'r') as f:
-        fundamentals = f.read().split()
+        fundamentals = f.read().split('\n')
 
     if __debug__:
         for f in fundamentals:
