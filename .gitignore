@@ -50,3 +50,4 @@ venv
 *.json
 
 .vscode
+key.txt
