@@ -11,14 +11,14 @@ import globals as g
 def get_ia_title(uuid):
 
     if __debug__:
-        sys.stderr.write(f'Fetching title for {uuid}\n')
+        sys.stderr.write('Fetching title for %s\n' % uuid)
 
     try:
-        r = requests.get(g.config.url + 'document/v0?uuid.values=' + uuid, headers=g.config.headers)
+        r = requests.get(g.config.url + 'document/v0?uuid.values=%s' % uuid, headers=g.config.headers)
     except requests.exceptions.ConnectionError as e:
-        sys.exit("Check your network connection:\n%s" % str(e))
+        sys.exit("Check your network connection:\n%s\n" % str(e))
     except requests.exceptions.HTTPError as e:
-        sys.exit("Bad HTTP response:\n%s" % str(e))
+        sys.exit("Bad HTTP response:\n%s\n" % str(e))
 
     if r.json()['total_size'] == 0:
         return "Missing Intelligence Alert"
@@ -67,13 +67,13 @@ def output_markdown(data):
 
 def get_fundamentals(filename):
     if __debug__:
-        sys.stderr.write('Opening ' + filename + ' for fundamentals\n')
+        sys.stderr.write('Opening %s for fundamentals\n' % filename)
     with open(filename, 'r') as f:
         fundamentals = f.read().split('\n')
 
     if __debug__:
         for f in fundamentals:
-            sys.stderr.write('F: ' + f + '\n')
+            sys.stderr.write('F: %s\n' % f)
     return fundamentals
 
 
@@ -81,10 +81,10 @@ def get_intel(fundamentals):
     intel = []
     for fundamental in fundamentals:
         if __debug__:
-            sys.stderr.write('Fetching ' + fundamental + '\n')
+            sys.stderr.write('Fetching %s\n' % fundamental)
 
         try:
-            r = requests.get(g.config.url + 'fundamental/v0?key.values=' + fundamental, headers=g.config.headers)
+            r = requests.get(g.config.url + 'fundamental/v0?key.values=%s' % fundamental, headers=g.config.headers)
         except requests.exceptions.ConnectionError as e:
             sys.exit("Check your network connection:\n%s" % str(e))
         except requests.exceptions.HTTPError as e:
@@ -93,12 +93,12 @@ def get_intel(fundamentals):
         if r.status_code != requests.codes.ok:
             sys.exit("Bad HTTP response:\n%s" % str(r.status_code))
         elif r.json()['total_size'] == 0:
-            sys.stderr.write('No results for ' + fundamental + '\n')
+            sys.stderr.write('No results for %s\n' % fundamental)
         elif r.json()['total_size'] == 1:
             # We only requested one fundamental, so there SHOULD be only one result
             intel.append(r.json()['results'][0])
         else:
-            sys.exit('Unexpected results for fundamental ' + fundamental + '\n')
+            sys.exit('Unexpected results for fundamental %s\n' % fundamental)
 
     return intel
 
