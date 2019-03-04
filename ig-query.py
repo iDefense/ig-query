@@ -72,6 +72,9 @@ def get_fundamentals(filename):
 def get_intel(fundamentals):
     intel = []
     for fundamental in fundamentals:
+        if len(fundamental) == 0:
+            continue
+
         try:
             r = requests.get(g.config.url + 'fundamental/v0?key.values=%s' % fundamental, headers=g.config.headers)
         except requests.exceptions.ConnectionError as e:
