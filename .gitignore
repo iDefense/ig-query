@@ -48,3 +48,6 @@ venv
 # data files
 *.xml
 *.json
+
+.vscode
+key.txt

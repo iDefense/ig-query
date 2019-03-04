@@ -9,12 +9,12 @@ The script requires an API authentication token as documented at the [IntelGraph
 The syntax is as follows:
 
 ```
-usage: ig-query.py [-h] [--debug] [--format {html,json,markdown}] indicator
+usage: ig-query.py [-h] [--debug] [--format {html,json,markdown}] key
 ```
 
 - `-h`: Help message
+- `--input`: Specify an input file containing keys for querying
 - `--format`: Specify format for output. Choices are `json`, `html`, or `markdown` (a human-readable text format).
-- `--debug`: Produce additional output for debugging. This is normally not needed unless working with iDefense support.
 
 Note that this script requires the use of the [requests](http://docs.python-requests.org/en/master/) and [Markdown](https://python-markdown.github.io/) libraries.
 
