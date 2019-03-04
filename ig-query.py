@@ -10,9 +10,6 @@ import globals as g
 
 def get_ia_title(uuid):
 
-    if __debug__:
-        sys.stderr.write('Fetching title for %s\n' % uuid)
-
     try:
         r = requests.get(g.config.url + 'document/v0?uuid.values=%s' % uuid, headers=g.config.headers)
     except requests.exceptions.ConnectionError as e:
@@ -66,23 +63,15 @@ def output_markdown(data):
 
 
 def get_fundamentals(filename):
-    if __debug__:
-        sys.stderr.write('Opening %s for fundamentals\n' % filename)
     with open(filename, 'r') as f:
         fundamentals = f.read().split('\n')
 
-    if __debug__:
-        for f in fundamentals:
-            sys.stderr.write('F: %s\n' % f)
     return fundamentals
 
 
 def get_intel(fundamentals):
     intel = []
     for fundamental in fundamentals:
-        if __debug__:
-            sys.stderr.write('Fetching %s\n' % fundamental)
-
         try:
             r = requests.get(g.config.url + 'fundamental/v0?key.values=%s' % fundamental, headers=g.config.headers)
         except requests.exceptions.ConnectionError as e:
@@ -112,8 +101,6 @@ def main():
 
     # Initial basics
     g.config.token = os.getenv('IDEF_TOKEN')
-    if __debug__:
-        sys.stderr.write('IDEF_TOKEN: %s\n' % g.config.token)
     if not g.config.token:
         sys.exit("Please provide API key in environment variable IDEF_TOKEN\n")
 
