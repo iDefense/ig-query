@@ -2,9 +2,11 @@ import argparse
 import json
 import os
 import sys
+import re
 
 import markdown
 import requests
+import base64
 import globals as g
 
 
@@ -30,11 +32,24 @@ def output_html(data):
     html = markdown.markdown(md)
     return html
 
+def pull_report_images(match):
+    match = match.group()
+    try:
+        response = requests.get("https://intelgraph.idefense.com/{}".format(match[1:-1]), stream=True, headers=g.config.headers)
+    except:
+        return match
+    return "(data:image/png;base64,{})".format(base64.b64encode(response.content).decode("utf-8", "ignore"))
 
 def output_markdown(data):
     md = ""
     for fundamental in data:
-        md += "# %s\n\n" % fundamental['key']
+        if 'title' in fundamental:
+            md += "# %s\n\n" % fundamental['title']
+        else:
+            md += "# %s\n\n" % fundamental['key']
+        if 'abstract' in fundamental:
+            md += "## Abstract: \n"
+            md += fundamental['abstract']
         md += "## Properties\n"
         md += "- Created on: %s\n" % fundamental['created_on']
         md += "- Modified on: %s\n" % fundamental['last_modified']
@@ -58,6 +73,13 @@ def output_markdown(data):
                     md += '- Intelligence Alert: [%s](%s%s)' % (title, 'https://intelgraph.idefense.com/#/node/intelligence_alert/view/', each['uuid'])
                 else:
                     md += "- %s (%s): %s\n" % (each['key'], each['type'], each['relationship'])
+        if 'analysis' in fundamental:
+            md += "## Analysis: \n"
+            md += re.sub(r'\(\/rest(.*?)\.(png|jpg|gif|jpeg)\)', pull_report_images, fundamental['analysis'])
+
+        if 'mitigation' in fundamental:
+            md += "## Mitigation: \n"
+            md += fundamental['mitigation']
         md += "\n---\n\n"
     return md
 
@@ -69,14 +91,14 @@ def get_fundamentals(filename):
     return fundamentals
 
 
-def get_intel(fundamentals):
+def get_intel(fundamentals, handle):
     intel = []
     for fundamental in fundamentals:
         if len(fundamental) == 0:
             continue
 
         try:
-            r = requests.get(g.config.url + 'fundamental/v0?key.values=%s' % fundamental, headers=g.config.headers)
+            r = requests.get(g.config.url + '%s?uuid.values=%s' % (handle, fundamental), headers=g.config.headers)
         except requests.exceptions.ConnectionError as e:
             sys.exit("Check your network connection:\n%s" % str(e))
         except requests.exceptions.HTTPError as e:
@@ -90,16 +112,18 @@ def get_intel(fundamentals):
             # We only requested one fundamental, so there SHOULD be only one result
             intel.append(r.json()['results'][0])
         else:
-            sys.exit('Unexpected results for fundamental %s\n' % fundamental)
+            sys.exit('Unexpected results for %s %s\n' % (handle, fundamental))
 
     return intel
 
 
 def main():
     parser = argparse.ArgumentParser(description='Query iDefense IntelGraph for information on a particular key (fundamental)')
-    parser.add_argument('key', nargs='?', help='Specify a key')
-    parser.add_argument('--input', help='Specify an input file containing keys')
+    parser.add_argument('uuid', nargs='?', help='Specify a UUID')
+    parser.add_argument('--input', help='Specify an input file containing UUIDs')
+    parser.add_argument('--type', help='Define whether to pull report or fundamental', choices=['report', 'fundamental'], default='fundamental')
     parser.add_argument('--format', help='Define output format', choices=['html', 'json', 'markdown'], default='json')
+    parser.set_defaults(report=False)
     args = parser.parse_args()
 
     # Initial basics
@@ -109,14 +133,17 @@ def main():
 
     g.config.headers = {"Content-Type": "application/json", "auth-token": g.config.token}
 
-    if args.key:
-        fundamentals = [args.key]
+    if args.uuid:
+        fundamentals = [args.uuid]
     elif args.input:
         fundamentals = get_fundamentals(args.input)
     else:
         sys.exit('Please specify a key or input file containing keys\n')
 
-    intel = get_intel(fundamentals)
+    if args.type == "report":
+        intel = get_intel(fundamentals, "document/v0/intelligence_alert")
+    else:
+        intel = get_intel(fundamentals, "fundamental/v0")
 
     if args.format == 'json':
         print(json.dumps(intel, indent=2))
